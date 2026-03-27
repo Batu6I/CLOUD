@@ -29,7 +29,7 @@
             text-transform: uppercase; 
             letter-spacing: 5px; 
             margin: 0;
-            font-size: 40px;
+            font-size: 35px;
             text-shadow: 3px 3px 10px rgba(0,0,0,0.8);
         }
 
@@ -38,45 +38,57 @@
             font-style: italic;
             margin-top: 10px;
             letter-spacing: 1px;
-            font-size: 16px;
+            font-size: 14px;
         }
 
-        .container { max-width: 900px; margin: auto; }
+        .container { max-width: 800px; margin: auto; }
 
         .card { 
             background: #160000; 
-            padding: 25px; 
+            padding: 20px; 
             border-radius: 12px; 
             margin-bottom: 20px; 
             border: 1px solid #4a0000; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.6); 
         }
 
-        h3 { color: #cc0000; border-bottom: 1px solid #4a0000; padding-bottom: 10px; text-transform: uppercase; }
+        h3 { color: #cc0000; border-bottom: 1px solid #4a0000; padding-bottom: 10px; text-transform: uppercase; font-size: 16px; }
 
         input, textarea { 
-            width: 96%; margin: 12px 0; padding: 14px; 
-            background: #000000; color: white; border: 1px solid #660000; border-radius: 8px;
-            font-size: 15px;
+            width: 95%; margin: 10px 0; padding: 12px; 
+            background: #000; color: white; border: 1px solid #660000; border-radius: 8px;
+            font-size: 14px;
         }
 
         button { 
-            width: 100%; padding: 14px; background: #800000; 
+            width: 100%; padding: 12px; background: #800000; 
             border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white;
             transition: 0.3s; text-transform: uppercase;
         }
 
-        button:hover { background: #b30000; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(179,0,0,0.4); }
+        button:hover { background: #b30000; transform: translateY(-2px); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: #330000; color: #ff3333; padding: 15px; text-align: left; }
-        td { padding: 15px; border-bottom: 1px solid #330000; }
-
-        .role-text { font-weight: bold; color: #ff3333; text-transform: uppercase; }
-
-        .post { background: #160000; border: 1px solid #4a0000; border-radius: 15px; margin-top: 25px; overflow: hidden; }
+        /* PAYLAŞIM VE YORUM ALANI */
+        .post { background: #160000; border: 1px solid #4a0000; border-radius: 12px; margin-top: 25px; overflow: hidden; }
+        .post img { width: 100%; max-height: 450px; object-fit: cover; border-bottom: 1px solid #4a0000; }
         .post-content { padding: 20px; }
-        .post img { width: 100%; border-bottom: 1px solid #4a0000; }
+        
+        .comment-section { background: #0a0000; padding: 15px; border-top: 1px solid #330000; }
+        .comment { 
+            background: #1a0000; 
+            padding: 10px; 
+            border-radius: 6px; 
+            margin-bottom: 8px; 
+            font-size: 13px; 
+            border-left: 3px solid #800000;
+        }
+        .comment b { color: #ff3333; margin-right: 5px; }
+
+        .comment-input-group { display: flex; gap: 10px; margin-top: 15px; }
+        .comment-input-group input { margin: 0; padding: 10px; font-size: 13px; flex-grow: 1; }
+        .comment-input-group button { width: 100px; padding: 10px; font-size: 11px; }
+
+        .delete-btn { background: #330000; font-size: 10px; margin-top: 20px; width: auto; padding: 5px 15px; }
     </style>
 </head>
 <body>
@@ -85,99 +97,106 @@
         <header>
             <h1>CLOUD OPERATÖR SAYFASI</h1>
             <div class="slogan">"Investigate the weather."</div>
-            <p style="margin-top:20px;">Sistem Durumu: <b style="color:#ff3333">AKTİF</b></p>
         </header>
 
         <div class="card">
-            <h3>Sisteme Kayıt</h3>
-            <input type="text" id="regName" placeholder="Kullanıcı Adı...">
-            <button onclick="kayitOl()">Veritabanına Ekle</button>
-        </div>
-
-        <div class="card">
-            <h3>CLOUD Personel Listesi</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Kullanıcı</th>
-                        <th>Yetki</th>
-                        <th>İşlem</th>
-                    </tr>
-                </thead>
-                <tbody id="user-list">
-                    </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h3>Veri Paylaşımı</h3>
-            <input type="text" id="imageUrl" placeholder="Resim URL (Kanıt)">
-            <textarea id="caption" rows="3" placeholder="Gözlem notlarını buraya yaz..."></textarea>
-            <button onclick="paylas()">Yayına Ver</button>
+            <h3>Veri Paylaşımı (Gözlem Raporu)</h3>
+            <input type="text" id="imgUrl" placeholder="Resim URL'si (Hızlı resim veya Discord linki)">
+            <textarea id="postText" rows="3" placeholder="Gözlem notlarını buraya girin..."></textarea>
+            <button onclick="yeniPaylasim()">Sisteme Yükle</button>
         </div>
 
         <div id="feed"></div>
+
+        <button class="delete-btn" onclick="verileriSifirla()">Sistemi Sıfırla (Tüm Verileri Sil)</button>
     </div>
 
     <script>
-        let users = [
-            { id: 1, name: "Sistem_Admin", role: "Kurucu" }
-        ];
+        // Verileri tarayıcı hafızasından yükle
+        let posts = JSON.parse(localStorage.getItem('cloud_posts')) || [];
 
-        window.onload = listeyiGuncelle;
+        window.onload = akisiGuncelle;
 
-        function listeyiGuncelle() {
-            const liste = document.getElementById('user-list');
-            liste.innerHTML = "";
-            users.forEach(user => {
-                liste.innerHTML += `
-                    <tr>
-                        <td>${user.name}</td>
-                        <td class="role-text">${user.role}</td>
-                        <td>
-                            <button style="width:auto; padding:5px 12px; font-size:12px; background:#4a0000;" onclick="yetkiVer(${user.id}, 'Operatör')">Yetkilendir</button>
-                        </td>
-                    </tr>
+        function yeniPaylasim() {
+            const url = document.getElementById('imgUrl').value;
+            const text = document.getElementById('postText').value;
+            
+            if(!url || !text) {
+                alert("Lütfen resim linki ve notu eksiksiz girin!");
+                return;
+            }
+
+            const post = {
+                id: Date.now(),
+                image: url,
+                content: text,
+                comments: []
+            };
+
+            posts.unshift(post); // Yeni paylaşımı başa ekle
+            veriyiKaydet();
+            akisiGuncelle();
+            
+            document.getElementById('imgUrl').value = "";
+            document.getElementById('postText').value = "";
+        }
+
+        function yorumEkle(postId) {
+            const input = document.getElementById(`comment-in-${postId}`);
+            if(!input.value.trim()) return;
+
+            const post = posts.find(p => p.id === postId);
+            post.comments.push({
+                user: "Operatör",
+                text: input.value,
+                time: new Date().toLocaleTimeString()
+            });
+
+            veriyiKaydet();
+            akisiGuncelle();
+        }
+
+        function akisiGuncelle() {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = "";
+
+            posts.forEach(post => {
+                let commentsHtml = post.comments.map(c => `
+                    <div class="comment">
+                        <b>[${c.user}]:</b> ${c.text} 
+                        <span style="font-size:10px; color:#444; float:right;">${c.time}</span>
+                    </div>
+                `).join('');
+
+                feed.innerHTML += `
+                    <div class="post">
+                        <img src="${post.image}" onerror="this.src='https://via.placeholder.com/800x400/1a0000/ff3333?text=VERI+YUKLENEMEDI'">
+                        <div class="post-content">
+                            <p>${post.content}</p>
+                        </div>
+                        <div class="comment-section">
+                            <h3>Yorumlar</h3>
+                            <div id="comments-${post.id}">${commentsHtml}</div>
+                            <div class="comment-input-group">
+                                <input type="text" id="comment-in-${post.id}" placeholder="Analiz yazın...">
+                                <button onclick="yorumEkle(${post.id})">Gönder</button>
+                            </div>
+                        </div>
+                    </div>
                 `;
             });
         }
 
-        function kayitOl() {
-            const isim = document.getElementById('regName').value;
-            if(isim.trim() === "") return alert("İsim gerekli!");
-            users.push({ id: users.length + 1, name: isim, role: "Üye" });
-            listeyiGuncelle();
-            document.getElementById('regName').value = "";
-            alert(isim + " sisteme dahil edildi.");
+        function veriyiKaydet() {
+            localStorage.setItem('cloud_posts', JSON.stringify(posts));
         }
 
-        function yetkiVer(id, rol) {
-            const user = users.find(u => u.id === id);
-            if(user) {
-                user.role = rol;
-                listeyiGuncelle();
-                alert(user.name + " yetkisi güncellendi: " + rol);
+        function verileriSifirla() {
+            if(confirm("Tüm paylaşımlar ve yorumlar silinecek. Emin misin?")) {
+                localStorage.removeItem('cloud_posts');
+                posts = [];
+                akisiGuncelle();
             }
-        }
-
-        function paylas() {
-            const url = document.getElementById('imageUrl').value;
-            const text = document.getElementById('caption').value;
-            const feed = document.getElementById('feed');
-            if(url === "") return alert("Görsel URL gerekli!");
-
-            const post = document.createElement('div');
-            post.className = 'post';
-            post.innerHTML = `
-                <img src="${url}" onerror="this.src='https://via.placeholder.com/600x300/1a0000/ff3333?text=VERI+YUKLENEMEDI'">
-                <div class="post-content">
-                    <p style="color:#ff3333; font-size:12px; margin-bottom:10px;">GÖZLEM RAPORU - CLOUD SYSTEM</p>
-                    <p>${text}</p>
-                </div>
-            `;
-            feed.prepend(post);
-            document.getElementById('imageUrl').value = "";
-            document.getElementById('caption').value = "";
         }
     </script>
 </body>
