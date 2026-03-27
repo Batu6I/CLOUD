@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operatör Kontrol Merkezi</title>
+    <style>
+        /* TASARIM (CSS) - KARANLIK TEMA */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0b0e14; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 20px; 
+        }
+
+        header { 
+            background: linear-gradient(90deg, #1a1a1a, #252525);
+            padding: 25px; 
+            border-radius: 15px; 
+            text-align: center; 
+            border-bottom: 4px solid #00ffcc; 
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,255,204,0.1);
+        }
+
+        h1 { color: #00ffcc; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+
+        .container { max-width: 900px; margin: auto; }
+
+        .card { 
+            background: #161b22; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            border: 1px solid #30363d; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
+        }
+
+        h3 { color: #ffcc00; margin-top: 0; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+
+        input, textarea { 
+            width: 96%; 
+            margin: 12px 0; 
+            padding: 14px; 
+            border-radius: 8px; 
+            border: 1px solid #30363d; 
+            background: #0d1117; 
+            color: #ffffff; 
+            font-size: 16px;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: #00ffcc; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            color: #0d1117; 
+            font-size: 16px;
+            transition: all 0.3s ease; 
+        }
+
+        button:hover { background: #00cca3; transform: translateY(-2px); }
+        .reg-btn { background: #ffcc00; color: #000; }
+        .reg-btn:hover { background: #e6b800; }
+
+        /* TABLO AYARLARI */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #30363d; }
+        th { background: #21262d; color: #00ffcc; }
+        .role-text { font-weight: bold; color: #ffcc00; }
+
+        /* POST (AKIŞ) AYARLARI */
+        .post { 
+            background: #161b22; 
+            border-radius: 15px; 
+            margin: 25px auto; 
+            overflow: hidden; 
+            border: 1px solid #30363d; 
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .post img { width: 100%; height: auto; display: block; border-bottom: 1px solid #30363d; }
+        .post-content { padding: 20px; }
+        .post-info { font-size: 12px; color: #8b949e; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Kontrol & Paylaşım Paneli</h1>
+            <p>Hoş geldin, <b id="admin-name" style="color:#00ffcc">Admin</b></p>
+        </header>
+
+        <div class="card">
+            <h3>Sisteme Yeni Üye Kaydı</h3>
+            <p style="font-size:14px; color:#8b949e">Buradan yeni isimler ekleyerek listeyi büyütebilirsin.</p>
+            <input type="text" id="regName" placeholder="Kullanıcı Adı Girin...">
+            <button class="reg-btn" onclick="kayitOl()">Kayıt Et ve Listeye Gönder</button>
+        </div>
+
+        <div class="card">
+            <h3>Üye Listesi & Yetkiler</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kullanıcı</th>
+                        <th>Mevcut Yetki</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Operatör Paylaşım Alanı</h3>
+            <input type="text" id="imageUrl" placeholder="Resim URL Adresi (https://...)">
+            <textarea id="caption" rows="3" placeholder="Resmin altına ne yazmak istersin?"></textarea>
+            <button onclick="paylas()">Gönderiyi Yayınla</button>
+        </div>
+
+        <h2 style="text-align:center; color:#00ffcc">Haber Akışı</h2>
+        <div id="feed"></div>
+    </div>
+
+    <script>
+        // JAVASCRIPT - ÇALIŞMA MANTIĞI
+        let users = [
+            { id: 1, name: "Ahmet_Gamer", role: "Üye" },
+            { id: 2, name: "Mehmet_Pro", role: "Kıdemli Üye" }
+        ];
+
+        // Sayfa yüklendiğinde listeyi bas
+        window.onload = listeyiGuncelle;
+
+        function listeyiGuncelle() {
+            const tableBody = document.getElementById('user-list');
+            tableBody.innerHTML = "";
+
+            users.forEach(user => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td class="role-text">${user.role}</td>
+                        <td>
+                            <button style="width:auto; padding:5px 10px;" onclick="yetkiVer(${user.id}, 'Operatör')">Operatör Yap</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Kayıt Fonksiyonu
+        function kayitOl() {
+            const input = document.getElementById('regName');
+            const name = input.value.trim();
+
+            if (name === "") {
+                alert("Lütfen bir isim yazın!");
+                return;
+            }
+
+            const newUser = {
+                id: users.length + 1,
+                name: name,
+                role: "Üye"
+            };
+
+            users.push(newUser);
+            listeyiGuncelle();
+            input.value = "";
+            alert(name + " başarıyla listeye eklendi!");
+        }
+
+        // Yetki Verme
+        function yetkiVer(id, role) {
+            const user = users.find(u => u.id === id);
+            if(user) {
+                user.role = role;
+                listeyiGuncelle();
+                alert(user.name + " artık " + role + " yetkisine sahip.");
+            }
+        }
+
+        // Paylaşım Yapma
+        function paylas() {
+            const url = document.getElementById('imageUrl').value;
+            const text = document.getElementById('caption').value;
+            const feed = document.getElementById('feed');
+
+            if (url === "") {
+                alert("Önce bir resim linki yapıştırın!");
+                return;
+            }
+
+            const newPost = document.createElement('div');
+            newPost.className = 'post';
+            newPost.innerHTML = `
+                <div class="post-content">
+                    <div class="post-info">Paylaşan: Admin | Az Önce</div>
+                    <img src="${url}" onerror="this.src='https://via.placeholder.com/600x300?text=Resim+Yüklenemedi'">
+                    <p>${text}</p>
+                </div>
+            `;
+
+            feed.prepend(newPost);
+            document.getElementById('imageUrl').value = "";
+            document.getElementById('caption').value = "";
+        }
+    </script>
+</body>
+</html>
